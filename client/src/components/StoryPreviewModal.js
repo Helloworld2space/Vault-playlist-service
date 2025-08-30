@@ -260,7 +260,7 @@ const StoryPreviewModal = ({ isOpen, onClose, playlist }) => {
 
   const handleShare = async () => {
     try {
-      // 먼저 이미지를 다운로드
+      // 먼저 이미지를 생성
       const token = localStorage.getItem('token');
       if (!token) {
         alert('로그인이 필요합니다.');
@@ -279,15 +279,37 @@ const StoryPreviewModal = ({ isOpen, onClose, playlist }) => {
         }
       );
 
-      // 이미지 다운로드
-      const url = window.URL.createObjectURL(new Blob([response.data]));
+      // 이미지 URL 생성
+      const imageUrl = window.URL.createObjectURL(new Blob([response.data]));
+      
+      // 모바일에서 Web Share API 시도
+      if (navigator.share && /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+        try {
+          // 이미지를 File 객체로 변환
+          const imageBlob = new Blob([response.data], { type: 'image/png' });
+          const imageFile = new File([imageBlob], `vault-story-${playlist.title}.png`, { type: 'image/png' });
+          
+          await navigator.share({
+            title: `${playlist.title} - Vault`,
+            text: `Check out this playlist: ${playlist.title}`,
+            files: [imageFile]
+          });
+          
+          window.URL.revokeObjectURL(imageUrl);
+          return;
+        } catch (shareError) {
+          console.log('Web Share API failed, falling back to download');
+        }
+      }
+
+      // 데스크톱 또는 Web Share API 실패 시 다운로드
       const link = document.createElement('a');
-      link.href = url;
+      link.href = imageUrl;
       link.setAttribute('download', `vault-story-${playlist.title}.png`);
       document.body.appendChild(link);
       link.click();
       link.remove();
-      window.URL.revokeObjectURL(url);
+      window.URL.revokeObjectURL(imageUrl);
 
       // 인스타그램 공유 안내
       alert(`스토리 이미지가 다운로드되었습니다!\n\n📱 인스타그램 공유 방법:\n1. 인스타그램 앱 열기\n2. 스토리 추가 버튼 클릭\n3. 다운로드된 이미지 선택\n4. 원하는 텍스트나 스티커 추가\n5. 스토리 공유하기\n\n이미지 파일명: vault-story-${playlist.title}.png`);
@@ -365,7 +387,7 @@ const StoryPreviewModal = ({ isOpen, onClose, playlist }) => {
 
           <InfoText>
             💡 Canvas API가 구현되었습니다!<br />
-            • "인스타그램 공유": 이미지 다운로드 + 공유 방법 안내<br />
+            • "인스타그램 공유": 모바일에서 네이티브 공유 메뉴 사용<br />
             • "이미지 다운로드": 고품질 스토리 이미지(1080x1920) 다운로드
           </InfoText>
         </ModalContent>
