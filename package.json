@@ -3,11 +3,11 @@
   "version": "1.0.0",
   "description": "플레이리스트 저장 및 편집 서비스",
   "main": "server/index.js",
-  "scripts": {
+    "scripts": {
     "dev": "concurrently \"npm run server\" \"npm run client\"",
     "server": "cd server && npm run dev",
     "client": "cd client && npm start",
-
+    "build": "cd client && npm install && npm run build",
     "install-all": "npm install && cd server && npm install && cd ../client && npm install"
   },
   "keywords": ["playlist", "music", "youtube", "spotify", "instagram"],
