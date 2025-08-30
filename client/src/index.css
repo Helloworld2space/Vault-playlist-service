@@ -11,7 +11,26 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background-attachment: fixed;
+  background-size: cover;
+  background-position: center;
   min-height: 100vh;
+  overflow-x: hidden;
+  position: relative;
+}
+
+/* 모바일에서 배경 고정 문제 해결 */
+@supports (-webkit-touch-callout: none) {
+  body {
+    background-attachment: scroll;
+  }
+}
+
+/* iOS Safari에서 배경 고정 문제 해결 */
+@media screen and (-webkit-min-device-pixel-ratio: 0) {
+  body {
+    background-attachment: scroll;
+  }
 }
 
 code {
@@ -140,5 +159,34 @@ code {
 
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.5);
+}
+
+/* 모바일 전용 스타일 */
+@media (max-width: 768px) {
+  body {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background-attachment: scroll;
+    background-size: 100% 100%;
+    background-repeat: no-repeat;
+    background-position: center center;
+  }
+  
+  /* 모바일에서 스크롤바 숨기기 */
+  ::-webkit-scrollbar {
+    display: none;
+  }
+  
+  /* iOS Safari에서 스크롤바 숨기기 */
+  -webkit-overflow-scrolling: touch;
+}
+
+/* 안전 영역 대응 (iPhone X 이상) */
+@supports (padding: max(0px)) {
+  body {
+    padding-left: max(0px, env(safe-area-inset-left));
+    padding-right: max(0px, env(safe-area-inset-right));
+    padding-top: max(0px, env(safe-area-inset-top));
+    padding-bottom: max(0px, env(safe-area-inset-bottom));
+  }
 }
 
