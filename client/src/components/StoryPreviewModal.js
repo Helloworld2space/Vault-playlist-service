@@ -258,9 +258,43 @@ const StoryPreviewModal = ({ isOpen, onClose, playlist }) => {
     }
   };
 
-  const handleShare = () => {
-    // 실제 구현에서는 인스타그램 공유 API 호출
-    alert('실제 구현에서는 인스타그램 공유 API를 사용하여 스토리를 공유합니다.');
+  const handleShare = async () => {
+    try {
+      // 먼저 이미지를 다운로드
+      const token = localStorage.getItem('token');
+      if (!token) {
+        alert('로그인이 필요합니다.');
+        return;
+      }
+
+      const response = await axios.post(
+        '/api/generate-story-image',
+        { playlistId: playlist.id },
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          responseType: 'blob'
+        }
+      );
+
+      // 이미지 다운로드
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `vault-story-${playlist.title}.png`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+
+      // 인스타그램 공유 안내
+      alert(`스토리 이미지가 다운로드되었습니다!\n\n📱 인스타그램 공유 방법:\n1. 인스타그램 앱 열기\n2. 스토리 추가 버튼 클릭\n3. 다운로드된 이미지 선택\n4. 원하는 텍스트나 스티커 추가\n5. 스토리 공유하기\n\n이미지 파일명: vault-story-${playlist.title}.png`);
+    } catch (error) {
+      console.error('스토리 공유 오류:', error);
+      alert('스토리 이미지 생성 중 오류가 발생했습니다.');
+    }
   };
 
   return (
@@ -330,8 +364,9 @@ const StoryPreviewModal = ({ isOpen, onClose, playlist }) => {
           </ActionButtons>
 
           <InfoText>
-            💡 Canvas API가 구현되었습니다! "이미지 다운로드" 버튼을 클릭하면<br />
-            고품질의 인스타그램 스토리 이미지(1080x1920)를 다운로드할 수 있습니다.
+            💡 Canvas API가 구현되었습니다!<br />
+            • "인스타그램 공유": 이미지 다운로드 + 공유 방법 안내<br />
+            • "이미지 다운로드": 고품질 스토리 이미지(1080x1920) 다운로드
           </InfoText>
         </ModalContent>
       </ModalOverlay>
