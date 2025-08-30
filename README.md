@@ -116,3 +116,4 @@ MIT License
 
 프로젝트에 대한 문의사항이 있으시면 이슈를 생성해주세요.
 
+# Vercel auto-deploy trigger
