@@ -205,22 +205,24 @@ app.post('/api/extract-info', authenticateToken, async (req, res) => {
   }
 });
 
-// 썸네일 업로드 (Vercel에서는 임시 URL 반환)
+// 썸네일 업로드 (Base64 인코딩으로 저장)
 app.post('/api/upload-thumbnail', authenticateToken, upload.single('thumbnail'), (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ message: '파일이 업로드되지 않았습니다.' });
     }
 
-    // Vercel에서는 파일 시스템이 읽기 전용이므로 임시 URL 반환
-    // 실제 구현에서는 Cloudinary, AWS S3 등의 클라우드 스토리지 사용
-    const thumbnailUrl = `https://via.placeholder.com/300x200/667eea/ffffff?text=Vault+Thumbnail`;
+    // 파일을 Base64로 인코딩
+    const base64Image = req.file.buffer.toString('base64');
+    const mimeType = req.file.mimetype;
+    const thumbnailUrl = `data:${mimeType};base64,${base64Image}`;
     
     res.json({
       message: '썸네일이 업로드되었습니다.',
       thumbnailUrl: thumbnailUrl
     });
   } catch (error) {
+    console.error('Thumbnail upload error:', error);
     res.status(500).json({ message: '썸네일 업로드 중 오류가 발생했습니다.' });
   }
 });

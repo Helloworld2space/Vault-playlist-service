@@ -283,6 +283,12 @@ const Dashboard = ({ user }) => {
   const getImageUrl = (imagePath) => {
     if (!imagePath) return null;
     
+    // Base64 이미지인지 확인
+    if (imagePath.startsWith('data:image/')) {
+      console.log('Using Base64 image:', imagePath.substring(0, 50) + '...');
+      return imagePath;
+    }
+    
     if (imagePath.startsWith('/uploads/')) {
       // Vercel에서는 placeholder 이미지 사용
       const fullUrl = `https://via.placeholder.com/300x200/667eea/ffffff?text=Vault+Thumbnail`;
