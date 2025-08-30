@@ -312,7 +312,7 @@ const StoryPreviewModal = ({ isOpen, onClose, playlist }) => {
       window.URL.revokeObjectURL(imageUrl);
 
       // 인스타그램 공유 안내
-      alert(`스토리 이미지가 다운로드되었습니다!\n\n📱 인스타그램 공유 방법:\n1. 인스타그램 앱 열기\n2. 스토리 추가 버튼 클릭\n3. 다운로드된 이미지 선택\n4. 원하는 텍스트나 스티커 추가\n5. 스토리 공유하기\n\n이미지 파일명: vault-story-${playlist.title}.png`);
+      alert(`스토리 이미지가 다운로드되었습니다!\n\n📱 인스타그램 공유 방법:\n1. 인스타그램 앱 열기\n2. 스토리 추가 버튼 클릭\n3. 다운로드된 이미지 선택\n4. 💫 링크 스티커 추가 → ${playlist.link}\n5. 원하는 텍스트나 스티커 추가\n6. 스토리 공유하기\n\n이미지 파일명: vault-story-${playlist.title}.png`);
     } catch (error) {
       console.error('스토리 공유 오류:', error);
       alert('스토리 이미지 생성 중 오류가 발생했습니다.');
@@ -371,6 +371,20 @@ const StoryPreviewModal = ({ isOpen, onClose, playlist }) => {
                   {playlist.platform === 'youtube' ? 'YouTube' : 'Spotify'}
                 </StoryValue>
               </StoryInfo>
+              
+              <StoryInfo>
+                <StoryLabel>Link</StoryLabel>
+                <StoryValue>
+                  <a 
+                    href={playlist.link} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    style={{ color: '#667eea', textDecoration: 'none', wordBreak: 'break-all' }}
+                  >
+                    {playlist.link}
+                  </a>
+                </StoryValue>
+              </StoryInfo>
             </StoryContent>
           </StoryPreview>
 
@@ -388,7 +402,8 @@ const StoryPreviewModal = ({ isOpen, onClose, playlist }) => {
           <InfoText>
             💡 Canvas API가 구현되었습니다!<br />
             • "인스타그램 공유": 모바일에서 네이티브 공유 메뉴 사용<br />
-            • "이미지 다운로드": 고품질 스토리 이미지(1080x1920) 다운로드
+            • "이미지 다운로드": 고품질 스토리 이미지(1080x1920) 다운로드<br />
+            • 💫 링크 스티커: 인스타그램에서 링크 스티커를 추가하여 클릭 가능한 링크 생성
           </InfoText>
         </ModalContent>
       </ModalOverlay>

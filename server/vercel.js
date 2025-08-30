@@ -468,6 +468,13 @@ app.post('/api/generate-story-image', authenticateToken, async (req, res) => {
     ctx.textBaseline = 'middle';
     ctx.fillText('VAULT', 540, 1700);
 
+    // 링크 안내 텍스트 그리기
+    ctx.font = 'bold 24px "Helvetica Neue", Arial, sans-serif';
+    ctx.fillStyle = '#ffffff';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('💫 스토리에 링크 스티커를 추가하세요!', 540, 1800);
+
     // Canvas를 이미지로 변환
     const buffer = canvas.toBuffer('image/png');
     
