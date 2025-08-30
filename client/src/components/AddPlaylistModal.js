@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiX, FiLink, FiMusic, FiYoutube, FiUpload, FiImage } from 'react-icons/fi';
+import { FiX, FiMusic, FiYoutube, FiImage } from 'react-icons/fi';
 import axios from 'axios';
 
 const ModalOverlay = styled(motion.div)`
@@ -290,7 +290,7 @@ const AddPlaylistModal = ({ onClose, onAdd }) => {
   const [loading, setLoading] = useState(false);
   const [extracting, setExtracting] = useState(false);
   const [error, setError] = useState('');
-  const [uploadingThumbnail, setUploadingThumbnail] = useState(false);
+
   const [selectedFile, setSelectedFile] = useState(null);
   const [thumbnailPreview, setThumbnailPreview] = useState('');
 
@@ -344,7 +344,7 @@ const AddPlaylistModal = ({ onClose, onAdd }) => {
   const handleFileUpload = async () => {
     if (!selectedFile) return null;
 
-    setUploadingThumbnail(true);
+
     setError('');
 
     try {
@@ -369,8 +369,6 @@ const AddPlaylistModal = ({ onClose, onAdd }) => {
     } catch (error) {
       setError('썸네일 업로드 중 오류가 발생했습니다');
       return null;
-    } finally {
-      setUploadingThumbnail(false);
     }
   };
 

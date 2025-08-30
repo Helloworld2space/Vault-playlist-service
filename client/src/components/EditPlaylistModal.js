@@ -283,7 +283,7 @@ const EditPlaylistModal = ({ playlist, onClose, onEdit }) => {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [uploadingThumbnail, setUploadingThumbnail] = useState(false);
+
   const [selectedFile, setSelectedFile] = useState(null);
   const [thumbnailPreview, setThumbnailPreview] = useState('');
 
@@ -322,7 +322,7 @@ const EditPlaylistModal = ({ playlist, onClose, onEdit }) => {
   const handleFileUpload = async () => {
     if (!selectedFile) return null;
 
-    setUploadingThumbnail(true);
+
     setError('');
 
     try {
@@ -347,8 +347,6 @@ const EditPlaylistModal = ({ playlist, onClose, onEdit }) => {
     } catch (error) {
       setError('썸네일 업로드 중 오류가 발생했습니다');
       return null;
-    } finally {
-      setUploadingThumbnail(false);
     }
   };
 
