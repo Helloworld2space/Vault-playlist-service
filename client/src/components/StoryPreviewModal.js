@@ -202,6 +202,8 @@ const InfoText = styled.p`
 `;
 
 const StoryPreviewModal = ({ isOpen, onClose, playlist }) => {
+  const [isDownloading, setIsDownloading] = useState(false);
+
   if (!isOpen || !playlist) return null;
 
   const getImageUrl = (imagePath) => {
@@ -214,8 +216,6 @@ const StoryPreviewModal = ({ isOpen, onClose, playlist }) => {
     
     return imagePath;
   };
-
-  const [isDownloading, setIsDownloading] = useState(false);
 
   const handleDownload = async () => {
     try {
