@@ -118,3 +118,4 @@ MIT License
 
 # Vercel auto-deploy trigger
 # Force Vercel deployment trigger - Sat Aug 30 14:09:28 KST 2025
+# Remove vercel.json for auto-detection - Sat Aug 30 14:17:03 KST 2025
