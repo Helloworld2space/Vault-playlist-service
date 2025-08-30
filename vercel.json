@@ -19,8 +19,28 @@
       "dest": "server/vercel.js"
     },
     {
+      "src": "/static/(.*)",
+      "dest": "build/static/$1"
+    },
+    {
+      "src": "/favicon.ico",
+      "dest": "build/favicon.ico"
+    },
+    {
+      "src": "/manifest.json",
+      "dest": "build/manifest.json"
+    },
+    {
+      "src": "/logo192.png",
+      "dest": "build/logo192.png"
+    },
+    {
+      "src": "/logo512.png",
+      "dest": "build/logo512.png"
+    },
+    {
       "src": "/(.*)",
-      "dest": "build/$1"
+      "dest": "build/index.html"
     }
   ]
 }
