@@ -402,41 +402,70 @@ app.post('/api/generate-story-image', authenticateToken, async (req, res) => {
     // Vercel에서는 파일 시스템 접근이 제한적이므로 썸네일 이미지는 사용하지 않음
     // 대신 플레이리스트 정보를 기반으로 한 디자인 사용
 
+    // 텍스트 렌더링을 위한 헬퍼 함수
+    const drawText = (text, x, y, fontSize, fontWeight = 'normal') => {
+      ctx.font = `${fontWeight} ${fontSize}px "Helvetica Neue", Arial, sans-serif`;
+      ctx.fillStyle = '#ffffff';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      
+      // 텍스트가 너무 길면 줄바꿈 처리
+      const maxWidth = 1000;
+      const words = text.split(' ');
+      let line = '';
+      let lines = [];
+      
+      for (let word of words) {
+        const testLine = line + word + ' ';
+        const metrics = ctx.measureText(testLine);
+        if (metrics.width > maxWidth && line !== '') {
+          lines.push(line);
+          line = word + ' ';
+        } else {
+          line = testLine;
+        }
+      }
+      lines.push(line);
+      
+      // 여러 줄 텍스트 그리기
+      lines.forEach((line, index) => {
+        ctx.fillText(line.trim(), x, y + (index * fontSize * 1.2));
+      });
+    };
+
     // 플랫폼 아이콘 그리기
     const platformIcon = playlist.platform === 'youtube' ? '🎵' : '🎧';
-    ctx.font = 'bold 48px Arial';
+    ctx.font = 'bold 48px "Helvetica Neue", Arial, sans-serif';
     ctx.fillStyle = '#ffffff';
     ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
     ctx.fillText(platformIcon, 540, 200);
 
-    // 제목 그리기
-    ctx.font = 'bold 64px Arial';
-    ctx.fillStyle = '#ffffff';
-    ctx.textAlign = 'center';
-    ctx.fillText(playlist.title, 540, 400);
+    // 제목 그리기 (줄바꿈 지원)
+    drawText(playlist.title, 540, 400, 64, 'bold');
 
     // Vibe 정보 그리기
     if (playlist.vibe) {
-      ctx.font = '36px Arial';
-      ctx.fillStyle = '#ffffff';
-      ctx.fillText(`Vibe: ${playlist.vibe}`, 540, 600);
+      drawText(`Vibe: ${playlist.vibe}`, 540, 600, 36);
     }
 
     // Kick Music 정보 그리기
     if (playlist.kickMusic) {
-      ctx.font = '36px Arial';
-      ctx.fillStyle = '#ffffff';
-      ctx.fillText(`Kick: ${playlist.kickMusic}`, 540, 700);
+      drawText(`Kick: ${playlist.kickMusic}`, 540, 700, 36);
     }
 
     // 플랫폼 정보 그리기
-    ctx.font = '28px Arial';
+    ctx.font = 'bold 28px "Helvetica Neue", Arial, sans-serif';
     ctx.fillStyle = '#ffffff';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
     ctx.fillText(`${playlist.platform.toUpperCase()}`, 540, 900);
 
     // Vault 로고 그리기
-    ctx.font = 'bold 48px Arial';
+    ctx.font = 'bold 48px "Helvetica Neue", Arial, sans-serif';
     ctx.fillStyle = '#ffffff';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
     ctx.fillText('VAULT', 540, 1700);
 
     // Canvas를 이미지로 변환
