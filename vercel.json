@@ -20,7 +20,7 @@
     },
     {
       "source": "/(.*)",
-      "destination": "server/index.js"
+      "destination": "/server/vercel.js"
     }
   ]
 }
