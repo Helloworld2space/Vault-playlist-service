@@ -13,14 +13,18 @@
       }
     }
   ],
-  "rewrites": [
+  "routes": [
     {
-      "source": "/api/(.*)",
-      "destination": "/server/vercel.js"
+      "src": "/api/(.*)",
+      "dest": "/server/vercel.js"
     },
     {
-      "source": "/(.*)",
-      "destination": "/index.html"
+      "src": "/static/(.*)",
+      "dest": "/build/static/$1"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/build/index.html"
     }
   ]
 }
