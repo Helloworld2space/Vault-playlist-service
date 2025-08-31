@@ -14,13 +14,8 @@
     }
   ],
   "routes": [
-    {
-      "src": "/api/(.*)",
-      "dest": "server/vercel.js"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "build/index.html"
-    }
+    { "handle": "filesystem" },
+    { "src": "/api/(.*)", "dest": "/server/vercel.js" },
+    { "src": "/.*", "dest": "/index.html" }
   ]
 }
