@@ -4,16 +4,27 @@
     {
       "src": "server/vercel.js",
       "use": "@vercel/node"
-    }
-  ],
-  "rewrites": [
-    {
-      "source": "/api/(.*)",
-      "destination": "/server/vercel.js"
     },
     {
-      "source": "/(.*)",
-      "destination": "/index.html"
+      "src": "client/package.json",
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "build"
+      }
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "/server/vercel.js"
+    },
+    {
+      "src": "/static/(.*)",
+      "dest": "/build/static/$1"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/build/index.html"
     }
   ]
 }
