@@ -20,7 +20,7 @@
     },
     {
       "source": "/(.*)",
-      "destination": "/server/vercel.js"
+      "destination": "/index.html"
     }
   ]
 }
