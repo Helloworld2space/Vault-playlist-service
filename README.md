@@ -2,7 +2,7 @@
 
 플레이리스트를 저장하고 편집하는 웹 서비스입니다. YouTube와 Spotify 링크를 통해 플레이리스트를 관리하고, 인스타그램 스토리로 공유할 수 있습니다.
 
-**Last Updated: 2025-08-30 17:00 - Fix Output Directory Issue with Correct vercel.json**
+**Last Updated: 2025-08-30 17:15 - Fix 404 Not Found with Correct Routing Paths**
 
 ## 주요 기능
 
