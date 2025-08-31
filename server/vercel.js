@@ -6,7 +6,6 @@ const axios = require('axios');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
-const { createCanvas, loadImage, registerFont } = require('canvas');
 const sharp = require('sharp');
 
 const app = express();
@@ -375,7 +374,7 @@ app.post('/api/generate-story', authenticateToken, async (req, res) => {
   }
 });
 
-// 인스타그램 스토리 이미지 생성 (Vercel용)
+// 인스타그램 스토리 이미지 생성 (Vercel용) - SVG 기반
 app.post('/api/generate-story-image', authenticateToken, async (req, res) => {
   try {
     const { playlistId } = req.body;
@@ -388,98 +387,66 @@ app.post('/api/generate-story-image', authenticateToken, async (req, res) => {
       return res.status(404).json({ message: '플레이리스트를 찾을 수 없습니다' });
     }
 
-    // Instagram 스토리 크기 (1080x1920)
-    const canvas = createCanvas(1080, 1920);
-    const ctx = canvas.getContext('2d');
+    // SVG 기반 스토리 이미지 생성
+    const svgContent = `
+      <svg width="1080" height="1920" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="background" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+            <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+          </linearGradient>
+        </defs>
+        
+        <!-- 배경 -->
+        <rect width="1080" height="1920" fill="url(#background)"/>
+        
+        <!-- 플랫폼 아이콘 -->
+        <text x="540" y="200" font-family="Arial, sans-serif" font-size="48" font-weight="bold" 
+              text-anchor="middle" dominant-baseline="middle" fill="#ffffff">
+          ${playlist.platform === 'youtube' ? '🎵' : '🎧'}
+        </text>
+        
+        <!-- 제목 (줄바꿈 처리) -->
+        ${generateTitleText(playlist.title, 540, 400)}
+        
+        <!-- Vibe 정보 -->
+        ${playlist.vibe ? `
+          <text x="540" y="600" font-family="Arial, sans-serif" font-size="36" 
+                text-anchor="middle" dominant-baseline="middle" fill="#ffffff">
+            Vibe: ${playlist.vibe}
+          </text>
+        ` : ''}
+        
+        <!-- Kick Music 정보 -->
+        ${playlist.kickMusic ? `
+          <text x="540" y="700" font-family="Arial, sans-serif" font-size="36" 
+                text-anchor="middle" dominant-baseline="middle" fill="#ffffff">
+            Kick: ${playlist.kickMusic}
+          </text>
+        ` : ''}
+        
+        <!-- 플랫폼 정보 -->
+        <text x="540" y="900" font-family="Arial, sans-serif" font-size="28" font-weight="bold" 
+              text-anchor="middle" dominant-baseline="middle" fill="#ffffff">
+          ${playlist.platform.toUpperCase()}
+        </text>
+        
+        <!-- Vault 로고 -->
+        <text x="540" y="1700" font-family="Arial, sans-serif" font-size="48" font-weight="bold" 
+              text-anchor="middle" dominant-baseline="middle" fill="#ffffff">
+          VAULT
+        </text>
+        
+        <!-- 링크 안내 텍스트 -->
+        <text x="540" y="1800" font-family="Arial, sans-serif" font-size="24" font-weight="bold" 
+              text-anchor="middle" dominant-baseline="middle" fill="#ffffff">
+          💫 스토리에 링크 스티커를 추가하세요!
+        </text>
+      </svg>
+    `;
 
-    // 그라데이션 배경 생성
-    const gradient = ctx.createLinearGradient(0, 0, 0, 1920);
-    gradient.addColorStop(0, '#667eea');
-    gradient.addColorStop(1, '#764ba2');
-    ctx.fillStyle = gradient;
-    ctx.fillRect(0, 0, 1080, 1920);
-
-    // Vercel에서는 파일 시스템 접근이 제한적이므로 썸네일 이미지는 사용하지 않음
-    // 대신 플레이리스트 정보를 기반으로 한 디자인 사용
-
-    // 텍스트 렌더링을 위한 헬퍼 함수
-    const drawText = (text, x, y, fontSize, fontWeight = 'normal') => {
-      ctx.font = `${fontWeight} ${fontSize}px "Helvetica Neue", Arial, sans-serif`;
-      ctx.fillStyle = '#ffffff';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      
-      // 텍스트가 너무 길면 줄바꿈 처리
-      const maxWidth = 1000;
-      const words = text.split(' ');
-      let line = '';
-      let lines = [];
-      
-      for (let word of words) {
-        const testLine = line + word + ' ';
-        const metrics = ctx.measureText(testLine);
-        if (metrics.width > maxWidth && line !== '') {
-          lines.push(line);
-          line = word + ' ';
-        } else {
-          line = testLine;
-        }
-      }
-      lines.push(line);
-      
-      // 여러 줄 텍스트 그리기
-      lines.forEach((line, index) => {
-        ctx.fillText(line.trim(), x, y + (index * fontSize * 1.2));
-      });
-    };
-
-    // 플랫폼 아이콘 그리기
-    const platformIcon = playlist.platform === 'youtube' ? '🎵' : '🎧';
-    ctx.font = 'bold 48px "Helvetica Neue", Arial, sans-serif';
-    ctx.fillStyle = '#ffffff';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(platformIcon, 540, 200);
-
-    // 제목 그리기 (줄바꿈 지원)
-    drawText(playlist.title, 540, 400, 64, 'bold');
-
-    // Vibe 정보 그리기
-    if (playlist.vibe) {
-      drawText(`Vibe: ${playlist.vibe}`, 540, 600, 36);
-    }
-
-    // Kick Music 정보 그리기
-    if (playlist.kickMusic) {
-      drawText(`Kick: ${playlist.kickMusic}`, 540, 700, 36);
-    }
-
-    // 플랫폼 정보 그리기
-    ctx.font = 'bold 28px "Helvetica Neue", Arial, sans-serif';
-    ctx.fillStyle = '#ffffff';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(`${playlist.platform.toUpperCase()}`, 540, 900);
-
-    // Vault 로고 그리기
-    ctx.font = 'bold 48px "Helvetica Neue", Arial, sans-serif';
-    ctx.fillStyle = '#ffffff';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText('VAULT', 540, 1700);
-
-    // 링크 안내 텍스트 그리기
-    ctx.font = 'bold 24px "Helvetica Neue", Arial, sans-serif';
-    ctx.fillStyle = '#ffffff';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText('💫 스토리에 링크 스티커를 추가하세요!', 540, 1800);
-
-    // Canvas를 이미지로 변환
-    const buffer = canvas.toBuffer('image/png');
-    
-    // 이미지 최적화 (Sharp 사용)
-    const optimizedBuffer = await sharp(buffer)
+    // SVG를 PNG로 변환 (Sharp 사용)
+    const optimizedBuffer = await sharp(Buffer.from(svgContent))
       .png({ quality: 90 })
       .toBuffer();
 
@@ -496,6 +463,37 @@ app.post('/api/generate-story-image', authenticateToken, async (req, res) => {
     res.status(500).json({ message: '스토리 이미지 생성 중 오류가 발생했습니다' });
   }
 });
+
+// SVG 제목 텍스트 생성 헬퍼 함수
+function generateTitleText(title, x, y) {
+  const maxWidth = 1000;
+  const fontSize = 64;
+  const lineHeight = fontSize * 1.2;
+  
+  // 간단한 줄바꿈 로직 (공백 기준)
+  const words = title.split(' ');
+  let lines = [];
+  let currentLine = '';
+  
+  for (let word of words) {
+    if (currentLine.length + word.length <= 15) { // 대략적인 문자 수 제한
+      currentLine += (currentLine ? ' ' : '') + word;
+    } else {
+      if (currentLine) lines.push(currentLine);
+      currentLine = word;
+    }
+  }
+  if (currentLine) lines.push(currentLine);
+  
+  // SVG 텍스트 요소 생성
+  return lines.map((line, index) => `
+    <text x="${x}" y="${y + (index * lineHeight)}" font-family="Arial, sans-serif" 
+          font-size="${fontSize}" font-weight="bold" text-anchor="middle" 
+          dominant-baseline="middle" fill="#ffffff">
+      ${line}
+    </text>
+  `).join('');
+}
 
 // 페이지 뷰 추적
 app.post('/api/analytics/pageview', (req, res) => {
