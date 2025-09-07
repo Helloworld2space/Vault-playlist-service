@@ -422,19 +422,41 @@ const AddPlaylistModal = ({ onClose, onAdd }) => {
     }
   };
 
-  const handleFileSelect = (e) => {
+  // 이미지 압축 함수
+  const compressImage = (file, maxWidth = 800, quality = 0.8) => {
+    return new Promise((resolve) => {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      const img = new Image();
+      
+      img.onload = () => {
+        // 이미지 크기 계산
+        let { width, height } = img;
+        if (width > maxWidth) {
+          height = (height * maxWidth) / width;
+          width = maxWidth;
+        }
+        
+        canvas.width = width;
+        canvas.height = height;
+        
+        // 이미지 그리기
+        ctx.drawImage(img, 0, 0, width, height);
+        
+        // 압축된 이미지를 Blob으로 변환
+        canvas.toBlob(resolve, file.type, quality);
+      };
+      
+      img.src = URL.createObjectURL(file);
+    });
+  };
+
+  const handleFileSelect = async (e) => {
     const file = e.target.files[0];
     console.log('=== FILE SELECTION ===');
     console.log('Selected file:', file);
     
     if (file) {
-      // 파일 크기 검증 (5MB 제한)
-      const maxSize = 5 * 1024 * 1024; // 5MB
-      if (file.size > maxSize) {
-        setError('파일 크기가 너무 큽니다. 5MB 이하의 파일을 선택해주세요.');
-        return;
-      }
-
       // 파일 타입 검증
       if (!file.type.startsWith('image/')) {
         setError('이미지 파일만 업로드할 수 있습니다.');
@@ -447,7 +469,33 @@ const AddPlaylistModal = ({ onClose, onAdd }) => {
         type: file.type
       });
 
-      setSelectedFile(file);
+      let processedFile = file;
+      
+      // 파일 크기가 2MB를 초과하면 압축
+      const maxSize = 2 * 1024 * 1024; // 2MB
+      if (file.size > maxSize) {
+        console.log('File too large, compressing...');
+        try {
+          const compressedBlob = await compressImage(file);
+          if (compressedBlob) {
+            processedFile = new File([compressedBlob], file.name, {
+              type: file.type,
+              lastModified: Date.now()
+            });
+            console.log('File compressed:', {
+              originalSize: file.size,
+              compressedSize: processedFile.size,
+              compressionRatio: ((file.size - processedFile.size) / file.size * 100).toFixed(1) + '%'
+            });
+          }
+        } catch (error) {
+          console.error('Image compression failed:', error);
+          setError('이미지 압축에 실패했습니다. 더 작은 이미지를 선택해주세요.');
+          return;
+        }
+      }
+
+      setSelectedFile(processedFile);
       setError(''); // 오류 메시지 초기화
       
       const reader = new FileReader();
@@ -459,7 +507,7 @@ const AddPlaylistModal = ({ onClose, onAdd }) => {
         console.error('FileReader error:', error);
         setError('파일을 읽는 중 오류가 발생했습니다.');
       };
-      reader.readAsDataURL(file);
+      reader.readAsDataURL(processedFile);
     }
   };
 
@@ -531,7 +579,7 @@ const AddPlaylistModal = ({ onClose, onAdd }) => {
       } else if (error.response?.status === 401) {
         setError('로그인이 필요합니다. 다시 로그인해주세요.');
       } else if (error.response?.status === 413) {
-        setError('파일 크기가 너무 큽니다. 5MB 이하의 파일을 선택해주세요.');
+        setError('파일 크기가 너무 큽니다. 2MB 이하의 파일을 선택해주세요.');
       } else if (error.response?.status === 400) {
         setError('지원하지 않는 파일 형식입니다. 이미지 파일을 선택해주세요.');
       } else {

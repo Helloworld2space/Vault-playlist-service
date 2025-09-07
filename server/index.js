@@ -56,8 +56,9 @@ const storage = multer.diskStorage({
 const upload = multer({ 
   storage: storage,
   limits: {
-    fileSize: 5 * 1024 * 1024, // 5MB 제한
-    files: 1 // 한 번에 하나의 파일만
+    fileSize: 2 * 1024 * 1024, // 2MB 제한 (Vercel 호환성을 위해 줄임)
+    files: 1, // 한 번에 하나의 파일만
+    fieldSize: 1024 * 1024 // 1MB 필드 크기 제한
   },
   fileFilter: function (req, file, cb) {
     console.log('Multer file filter - file:', file);
@@ -385,7 +386,7 @@ const handleMulterError = (error, req, res, next) => {
   console.log('Multer error:', error);
   if (error instanceof multer.MulterError) {
     if (error.code === 'LIMIT_FILE_SIZE') {
-      return res.status(413).json({ message: '파일 크기가 너무 큽니다. 5MB 이하의 파일을 선택해주세요.' });
+      return res.status(413).json({ message: '파일 크기가 너무 큽니다. 2MB 이하의 파일을 선택해주세요.' });
     }
     if (error.code === 'LIMIT_FILE_COUNT') {
       return res.status(400).json({ message: '한 번에 하나의 파일만 업로드할 수 있습니다.' });
