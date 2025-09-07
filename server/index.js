@@ -56,13 +56,18 @@ const storage = multer.diskStorage({
 const upload = multer({ 
   storage: storage,
   limits: {
-    fileSize: 5 * 1024 * 1024 // 5MB 제한
+    fileSize: 5 * 1024 * 1024, // 5MB 제한
+    files: 1 // 한 번에 하나의 파일만
   },
   fileFilter: function (req, file, cb) {
+    console.log('Multer file filter - file:', file);
+    
     // 이미지 파일만 허용
     if (file.mimetype.startsWith('image/')) {
+      console.log('File accepted:', file.originalname);
       cb(null, true);
     } else {
+      console.log('File rejected - not an image:', file.originalname, file.mimetype);
       cb(new Error('이미지 파일만 업로드 가능합니다.'), false);
     }
   }
@@ -365,19 +370,52 @@ app.delete('/api/playlists/:id', authenticateToken, async (req, res) => {
   }
 });
 
+// Multer 오류 처리 미들웨어
+const handleMulterError = (error, req, res, next) => {
+  console.log('Multer error:', error);
+  if (error instanceof multer.MulterError) {
+    if (error.code === 'LIMIT_FILE_SIZE') {
+      return res.status(413).json({ message: '파일 크기가 너무 큽니다. 5MB 이하의 파일을 선택해주세요.' });
+    }
+    if (error.code === 'LIMIT_FILE_COUNT') {
+      return res.status(400).json({ message: '한 번에 하나의 파일만 업로드할 수 있습니다.' });
+    }
+  }
+  if (error.message === '이미지 파일만 업로드 가능합니다.') {
+    return res.status(400).json({ message: '이미지 파일만 업로드할 수 있습니다.' });
+  }
+  next(error);
+};
+
 // 썸네일 업로드
-app.post('/api/upload-thumbnail', authenticateToken, upload.single('thumbnail'), (req, res) => {
+app.post('/api/upload-thumbnail', authenticateToken, upload.single('thumbnail'), handleMulterError, (req, res) => {
   try {
+    console.log('=== THUMBNAIL UPLOAD REQUEST ===');
+    console.log('User ID:', req.user.id);
+    console.log('Uploaded file:', req.file);
+    console.log('Request headers:', req.headers);
+
     if (!req.file) {
+      console.log('No file uploaded');
       return res.status(400).json({ message: '파일이 업로드되지 않았습니다.' });
     }
 
+    console.log('File details:', {
+      originalname: req.file.originalname,
+      filename: req.file.filename,
+      mimetype: req.file.mimetype,
+      size: req.file.size
+    });
+
     const thumbnailUrl = `/uploads/${req.file.filename}`;
+    console.log('Generated thumbnail URL:', thumbnailUrl);
+    
     res.json({ 
       message: '썸네일이 업로드되었습니다.',
       thumbnailUrl: thumbnailUrl
     });
   } catch (error) {
+    console.error('Thumbnail upload error:', error);
     res.status(500).json({ message: '썸네일 업로드 중 오류가 발생했습니다.' });
   }
 });

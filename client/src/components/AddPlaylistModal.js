@@ -424,11 +424,40 @@ const AddPlaylistModal = ({ onClose, onAdd }) => {
 
   const handleFileSelect = (e) => {
     const file = e.target.files[0];
+    console.log('=== FILE SELECTION ===');
+    console.log('Selected file:', file);
+    
     if (file) {
+      // 파일 크기 검증 (5MB 제한)
+      const maxSize = 5 * 1024 * 1024; // 5MB
+      if (file.size > maxSize) {
+        setError('파일 크기가 너무 큽니다. 5MB 이하의 파일을 선택해주세요.');
+        return;
+      }
+
+      // 파일 타입 검증
+      if (!file.type.startsWith('image/')) {
+        setError('이미지 파일만 업로드할 수 있습니다.');
+        return;
+      }
+
+      console.log('File validation passed:', {
+        name: file.name,
+        size: file.size,
+        type: file.type
+      });
+
       setSelectedFile(file);
+      setError(''); // 오류 메시지 초기화
+      
       const reader = new FileReader();
       reader.onload = (e) => {
         setThumbnailPreview(e.target.result);
+        console.log('Thumbnail preview generated');
+      };
+      reader.onerror = (error) => {
+        console.error('FileReader error:', error);
+        setError('파일을 읽는 중 오류가 발생했습니다.');
       };
       reader.readAsDataURL(file);
     }
@@ -437,30 +466,77 @@ const AddPlaylistModal = ({ onClose, onAdd }) => {
   const handleFileUpload = async () => {
     if (!selectedFile) return null;
 
+    console.log('=== FILE UPLOAD START ===');
+    console.log('Selected file:', selectedFile);
+    console.log('File size:', selectedFile.size);
+    console.log('File type:', selectedFile.type);
 
     setError('');
 
     try {
+      // 모바일에서 localStorage 접근 안전성 확인
+      let token;
+      try {
+        token = localStorage.getItem('token');
+      } catch (storageError) {
+        console.error('localStorage access error during file upload:', storageError);
+        setError('브라우저 저장소에 접근할 수 없습니다. 다시 로그인해주세요.');
+        return null;
+      }
+
+      if (!token) {
+        console.log('No token found for file upload');
+        setError('로그인이 필요합니다. 다시 로그인해주세요.');
+        return null;
+      }
+
       const formData = new FormData();
       formData.append('thumbnail', selectedFile);
 
-      const token = localStorage.getItem('token');
+      console.log('FormData created:', formData);
+      console.log('FormData entries:');
+      for (let [key, value] of formData.entries()) {
+        console.log(key, value);
+      }
+
+      console.log('Uploading file to server...');
       const response = await axios.post('/api/upload-thumbnail', formData, {
         headers: { 
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'multipart/form-data'
+          Authorization: `Bearer ${token}`
+          // Content-Type을 명시적으로 설정하지 않음 (axios가 자동으로 multipart/form-data 설정)
+        },
+        timeout: 30000, // 30초 타임아웃 (파일 업로드는 더 오래 걸릴 수 있음)
+        onUploadProgress: (progressEvent) => {
+          const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+          console.log(`Upload progress: ${percentCompleted}%`);
         }
       });
 
+      console.log('File upload response:', response.data);
       const thumbnailUrl = response.data.thumbnailUrl;
+      
       setFormData(prev => ({
         ...prev,
         thumbnail: thumbnailUrl
       }));
       
+      console.log('File uploaded successfully:', thumbnailUrl);
       return thumbnailUrl;
     } catch (error) {
-      setError('썸네일 업로드 중 오류가 발생했습니다');
+      console.error('File upload error:', error);
+      
+      // 모바일 특화 오류 처리
+      if (error.code === 'ECONNABORTED') {
+        setError('파일 업로드 시간이 초과되었습니다. 다시 시도해주세요.');
+      } else if (error.response?.status === 401) {
+        setError('로그인이 필요합니다. 다시 로그인해주세요.');
+      } else if (error.response?.status === 413) {
+        setError('파일 크기가 너무 큽니다. 5MB 이하의 파일을 선택해주세요.');
+      } else if (error.response?.status === 400) {
+        setError('지원하지 않는 파일 형식입니다. 이미지 파일을 선택해주세요.');
+      } else {
+        setError('썸네일 업로드 중 오류가 발생했습니다. 다시 시도해주세요.');
+      }
       return null;
     }
   };
@@ -621,6 +697,7 @@ const AddPlaylistModal = ({ onClose, onAdd }) => {
                     type="file"
                     accept="image/*"
                     onChange={handleFileSelect}
+                    capture="environment"
                   />
                   <UploadIcon>
                     <FiImage size={48} />
