@@ -260,7 +260,17 @@ const Dashboard = ({ user }) => {
       setError(''); // 성공 시 오류 메시지 초기화
       console.log('Playlist added successfully to state');
     } catch (error) {
-      console.error('Error adding playlist:', error);
+      console.error('=== DASHBOARD: PLAYLIST ADDITION ERROR ===');
+      console.error('Error object:', error);
+      console.error('Error message:', error.message);
+      console.error('Error response:', error.response);
+      console.error('Error status:', error.response?.status);
+      console.error('Error data:', error.response?.data);
+      console.error('Error config:', error.config);
+      console.error('Request URL:', error.config?.url);
+      console.error('Request method:', error.config?.method);
+      console.error('Request headers:', error.config?.headers);
+      console.error('Request data:', error.config?.data);
       
       // 모바일 특화 오류 처리
       if (error.code === 'ECONNABORTED') {
@@ -271,8 +281,10 @@ const Dashboard = ({ user }) => {
         setError('서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
       } else if (error.response?.status === 400) {
         setError(error.response.data?.message || '입력 정보를 확인해주세요.');
+      } else if (error.message === 'Network Error') {
+        setError('네트워크 연결을 확인해주세요.');
       } else {
-        setError('플레이리스트 추가 중 오류가 발생했습니다. 다시 시도해주세요.');
+        setError(`플레이리스트 추가 중 오류가 발생했습니다: ${error.message || '알 수 없는 오류'}`);
       }
     }
   };

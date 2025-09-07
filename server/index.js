@@ -291,8 +291,18 @@ app.post('/api/playlists', authenticateToken, async (req, res) => {
       playlist: playlistData
     });
   } catch (error) {
-    console.error('Error creating playlist:', error);
-    res.status(500).json({ message: '플레이리스트 저장 중 오류가 발생했습니다' });
+    console.error('=== PLAYLIST CREATION ERROR ===');
+    console.error('Error object:', error);
+    console.error('Error message:', error.message);
+    console.error('Error stack:', error.stack);
+    console.error('Request body:', req.body);
+    console.error('User ID:', req.user?.id);
+    console.error('Request headers:', req.headers);
+    
+    res.status(500).json({ 
+      message: '플레이리스트 저장 중 오류가 발생했습니다',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
   }
 });
 

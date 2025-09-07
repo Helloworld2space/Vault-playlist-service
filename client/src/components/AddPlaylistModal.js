@@ -592,13 +592,34 @@ const AddPlaylistModal = ({ onClose, onAdd }) => {
       
       console.log('Form submission completed successfully');
     } catch (error) {
-      console.error('플레이리스트 추가 오류:', error);
+      console.error('=== PLAYLIST CREATION ERROR ===');
+      console.error('Error object:', error);
+      console.error('Error message:', error.message);
+      console.error('Error response:', error.response);
+      console.error('Error status:', error.response?.status);
+      console.error('Error data:', error.response?.data);
+      console.error('Error config:', error.config);
+      
+      // 모바일에서 localStorage 접근 오류 확인
+      try {
+        const token = localStorage.getItem('token');
+        console.log('Token check during error:', token ? 'Token exists' : 'No token');
+      } catch (storageError) {
+        console.error('localStorage access error during error handling:', storageError);
+      }
+      
       if (error.response?.status === 401) {
         setError('로그인이 필요합니다. 다시 로그인해주세요.');
       } else if (error.response?.status === 500) {
         setError('서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
+      } else if (error.code === 'ECONNABORTED') {
+        setError('요청 시간이 초과되었습니다. 네트워크를 확인하고 다시 시도해주세요.');
+      } else if (error.message === 'Network Error') {
+        setError('네트워크 연결을 확인해주세요.');
+      } else if (error.response?.data?.message) {
+        setError(`서버 오류: ${error.response.data.message}`);
       } else {
-        setError('플레이리스트 추가 중 오류가 발생했습니다');
+        setError(`플레이리스트 추가 중 오류가 발생했습니다: ${error.message || '알 수 없는 오류'}`);
       }
     } finally {
       setLoading(false);
