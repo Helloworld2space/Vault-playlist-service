@@ -228,20 +228,52 @@ const Dashboard = ({ user }) => {
 
   const handleAddPlaylist = async (playlistData) => {
     try {
-      console.log('Adding playlist with data:', playlistData);
+      console.log('=== DASHBOARD: Adding playlist with data ===');
+      console.log('Playlist data:', playlistData);
       console.log('Thumbnail URL:', playlistData.thumbnail);
       
-      const token = localStorage.getItem('token');
+      // 모바일에서 localStorage 접근 안전성 확인
+      let token;
+      try {
+        token = localStorage.getItem('token');
+      } catch (storageError) {
+        console.error('localStorage access error:', storageError);
+        setError('브라우저 저장소에 접근할 수 없습니다. 다시 로그인해주세요.');
+        return;
+      }
+
+      if (!token) {
+        console.log('No token found in localStorage');
+        setError('로그인이 필요합니다. 다시 로그인해주세요.');
+        return;
+      }
+      
+      console.log('Token found, making API request...');
       const response = await axios.post('/api/playlists', playlistData, {
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` },
+        timeout: 15000 // 15초 타임아웃 설정
       });
       
       console.log('Server response:', response.data);
       setPlaylists([response.data.playlist, ...playlists]);
       setShowAddModal(false);
+      setError(''); // 성공 시 오류 메시지 초기화
+      console.log('Playlist added successfully to state');
     } catch (error) {
       console.error('Error adding playlist:', error);
-      setError('플레이리스트 추가 중 오류가 발생했습니다');
+      
+      // 모바일 특화 오류 처리
+      if (error.code === 'ECONNABORTED') {
+        setError('네트워크 연결이 불안정합니다. 다시 시도해주세요.');
+      } else if (error.response?.status === 401) {
+        setError('로그인이 필요합니다. 다시 로그인해주세요.');
+      } else if (error.response?.status === 500) {
+        setError('서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
+      } else if (error.response?.status === 400) {
+        setError(error.response.data?.message || '입력 정보를 확인해주세요.');
+      } else {
+        setError('플레이리스트 추가 중 오류가 발생했습니다. 다시 시도해주세요.');
+      }
     }
   };
 

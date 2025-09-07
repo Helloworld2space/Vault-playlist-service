@@ -76,18 +76,27 @@ const authenticateToken = async (req, res, next) => {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
 
+  console.log('Auth header:', authHeader);
+  console.log('Extracted token:', token ? 'Present' : 'Missing');
+
   if (!token) {
+    console.log('No token provided');
     return res.status(401).json({ message: '액세스 토큰이 필요합니다' });
   }
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
+    console.log('Decoded token:', decoded);
     req.user = users.find(user => user.id === decoded.userId);
+    console.log('Found user:', req.user ? req.user.username : 'Not found');
+    
     if (!req.user) {
+      console.log('User not found for token');
       return res.status(403).json({ message: '유효하지 않은 토큰입니다' });
     }
     next();
   } catch (error) {
+    console.log('Token verification error:', error.message);
     return res.status(403).json({ message: '유효하지 않은 토큰입니다' });
   }
 };
@@ -231,8 +240,19 @@ app.post('/api/playlists', authenticateToken, async (req, res) => {
   try {
     const { title, link, thumbnail, vibe, kickMusic, platform } = req.body;
     
-    console.log('Creating playlist with data:', req.body);
+    console.log('=== PLAYLIST CREATION REQUEST ===');
+    console.log('User ID:', req.user.id);
+    console.log('Request body:', req.body);
     console.log('Thumbnail URL:', thumbnail);
+
+    // 필수 필드 검증
+    if (!title || !link) {
+      console.log('Missing required fields - title:', title, 'link:', link);
+      return res.status(400).json({ 
+        message: '제목과 링크는 필수 입력 항목입니다.',
+        details: { title: !!title, link: !!link }
+      });
+    }
 
     // 빈 썸네일 값 처리
     const playlistData = {
@@ -257,6 +277,9 @@ app.post('/api/playlists', authenticateToken, async (req, res) => {
     
     // 플레이리스트 생성 통계 증가
     analytics.playlistsCreated++;
+
+    console.log('Playlist successfully created and saved');
+    console.log('Total playlists:', playlists.length);
 
     res.status(201).json({
       message: '플레이리스트가 저장되었습니다',

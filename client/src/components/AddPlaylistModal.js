@@ -378,7 +378,23 @@ const AddPlaylistModal = ({ onClose, onAdd }) => {
     if (link && (link.includes('youtube.com') || link.includes('spotify.com'))) {
       setExtracting(true);
       try {
-        const token = localStorage.getItem('token');
+        // 모바일에서 localStorage 접근 안전성 확인
+        let token;
+        try {
+          token = localStorage.getItem('token');
+        } catch (storageError) {
+          console.error('localStorage access error:', storageError);
+          setError('브라우저 저장소에 접근할 수 없습니다. 다시 로그인해주세요.');
+          setExtracting(false);
+          return;
+        }
+
+        if (!token) {
+          setError('로그인이 필요합니다. 다시 로그인해주세요.');
+          setExtracting(false);
+          return;
+        }
+
         const response = await axios.post('/api/extract-info', { link }, {
           headers: { Authorization: `Bearer ${token}` },
           timeout: 10000 // 10초 타임아웃 설정
@@ -464,8 +480,13 @@ const AddPlaylistModal = ({ onClose, onAdd }) => {
     setLoading(true);
 
     try {
+      console.log('=== FORM SUBMISSION START ===');
+      console.log('Form data:', formData);
+      console.log('Selected file:', selectedFile);
+
       // 모바일에서 필수 필드 검증
       if (!formData.link || !formData.title) {
+        console.log('Validation failed - missing required fields');
         setError('링크와 제목은 필수 입력 항목입니다.');
         setLoading(false);
         return;
@@ -475,9 +496,11 @@ const AddPlaylistModal = ({ onClose, onAdd }) => {
       
       // 썸네일이 선택되었지만 업로드되지 않은 경우 먼저 업로드
       if (selectedFile && !formData.thumbnail) {
+        console.log('Uploading thumbnail file...');
         const thumbnailUrl = await handleFileUpload();
         if (thumbnailUrl) {
           finalFormData = { ...formData, thumbnail: thumbnailUrl };
+          console.log('Thumbnail uploaded successfully:', thumbnailUrl);
         }
       }
 
@@ -486,7 +509,12 @@ const AddPlaylistModal = ({ onClose, onAdd }) => {
         delete finalFormData.thumbnail;
       }
 
+      console.log('Final form data to send:', finalFormData);
+      console.log('Calling onAdd function...');
+      
       await onAdd(finalFormData);
+      
+      console.log('Form submission completed successfully');
     } catch (error) {
       console.error('플레이리스트 추가 오류:', error);
       if (error.response?.status === 401) {
