@@ -15,7 +15,14 @@ const ModalOverlay = styled(motion.div)`
   justify-content: center;
   align-items: center;
   z-index: 1000;
-  padding: 2rem;
+  padding: 1rem;
+  
+  /* 모바일 최적화 */
+  @media (max-width: 768px) {
+    padding: 0.5rem;
+    align-items: flex-start;
+    padding-top: 2rem;
+  }
 `;
 
 const ModalContent = styled(motion.div)`
@@ -30,6 +37,13 @@ const ModalContent = styled(motion.div)`
   position: relative;
   display: flex;
   flex-direction: column;
+  
+  /* 모바일 최적화 */
+  @media (max-width: 768px) {
+    max-height: 95vh;
+    border-radius: 16px;
+    width: 100%;
+  }
 `;
 
 const CloseButton = styled.button`
@@ -56,6 +70,13 @@ const Title = styled.h2`
   margin-bottom: 1.5rem;
   text-align: center;
   padding: 2rem 2rem 0 2rem;
+  
+  /* 모바일 최적화 */
+  @media (max-width: 768px) {
+    font-size: 20px;
+    padding: 1.5rem 1rem 0 1rem;
+    margin-bottom: 1rem;
+  }
 `;
 
 const Form = styled.form`
@@ -65,6 +86,12 @@ const Form = styled.form`
   padding: 0 2rem 2rem 2rem;
   overflow-y: auto;
   flex: 1;
+  
+  /* 모바일 최적화 */
+  @media (max-width: 768px) {
+    gap: 1rem;
+    padding: 0 1rem 1rem 1rem;
+  }
 `;
 
 const FormGroup = styled.div`
@@ -88,6 +115,7 @@ const Input = styled.input`
   color: white;
   font-size: 14px;
   transition: all 0.3s ease;
+  min-height: 44px; /* 모바일 터치 최적화 */
 
   &::placeholder {
     color: rgba(255, 255, 255, 0.6);
@@ -97,6 +125,12 @@ const Input = styled.input`
     outline: none;
     border-color: #667eea;
     background: rgba(255, 255, 255, 0.15);
+  }
+  
+  /* 모바일 최적화 */
+  @media (max-width: 768px) {
+    font-size: 16px; /* iOS 줌 방지 */
+    min-height: 48px;
   }
 `;
 
@@ -120,6 +154,12 @@ const Textarea = styled.textarea`
     outline: none;
     border-color: #667eea;
     background: rgba(255, 255, 255, 0.15);
+  }
+  
+  /* 모바일 최적화 */
+  @media (max-width: 768px) {
+    font-size: 16px; /* iOS 줌 방지 */
+    min-height: 100px;
   }
 `;
 
@@ -163,6 +203,7 @@ const Button = styled.button`
   cursor: pointer;
   transition: all 0.3s ease;
   font-size: 14px;
+  min-height: 44px; /* 모바일 터치 최적화 */
 
   &.primary {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -171,6 +212,10 @@ const Button = styled.button`
     &:hover {
       transform: translateY(-2px);
       box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+    }
+
+    &:active {
+      transform: translateY(0);
     }
 
     &:disabled {
@@ -188,6 +233,16 @@ const Button = styled.button`
     &:hover {
       background: rgba(255, 255, 255, 0.2);
     }
+
+    &:active {
+      background: rgba(255, 255, 255, 0.15);
+    }
+  }
+  
+  /* 모바일 최적화 */
+  @media (max-width: 768px) {
+    min-height: 48px;
+    font-size: 16px;
   }
 `;
 
@@ -214,15 +269,30 @@ const FileUploadArea = styled.div`
   cursor: pointer;
   transition: all 0.3s ease;
   background: rgba(255, 255, 255, 0.05);
+  min-height: 120px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 
   &:hover {
     border-color: #667eea;
     background: rgba(255, 255, 255, 0.1);
   }
 
+  &:active {
+    transform: scale(0.98);
+  }
+
   &.has-file {
     border-color: #2ed573;
     background: rgba(46, 213, 115, 0.1);
+  }
+  
+  /* 모바일 최적화 */
+  @media (max-width: 768px) {
+    padding: 1.5rem;
+    min-height: 100px;
   }
 `;
 
@@ -310,7 +380,8 @@ const AddPlaylistModal = ({ onClose, onAdd }) => {
       try {
         const token = localStorage.getItem('token');
         const response = await axios.post('/api/extract-info', { link }, {
-          headers: { Authorization: `Bearer ${token}` }
+          headers: { Authorization: `Bearer ${token}` },
+          timeout: 10000 // 10초 타임아웃 설정
         });
         
         setFormData(prev => ({
@@ -323,6 +394,12 @@ const AddPlaylistModal = ({ onClose, onAdd }) => {
         }));
       } catch (error) {
         console.error('정보 추출 실패:', error);
+        // 모바일에서 네트워크 오류 시 사용자에게 알림
+        if (error.code === 'ECONNABORTED') {
+          setError('네트워크 연결이 불안정합니다. 다시 시도해주세요.');
+        } else {
+          setError('링크 정보를 가져오는 중 오류가 발생했습니다.');
+        }
       } finally {
         setExtracting(false);
       }
@@ -387,6 +464,13 @@ const AddPlaylistModal = ({ onClose, onAdd }) => {
     setLoading(true);
 
     try {
+      // 모바일에서 필수 필드 검증
+      if (!formData.link || !formData.title) {
+        setError('링크와 제목은 필수 입력 항목입니다.');
+        setLoading(false);
+        return;
+      }
+
       let finalFormData = { ...formData };
       
       // 썸네일이 선택되었지만 업로드되지 않은 경우 먼저 업로드
@@ -404,7 +488,14 @@ const AddPlaylistModal = ({ onClose, onAdd }) => {
 
       await onAdd(finalFormData);
     } catch (error) {
-      setError('플레이리스트 추가 중 오류가 발생했습니다');
+      console.error('플레이리스트 추가 오류:', error);
+      if (error.response?.status === 401) {
+        setError('로그인이 필요합니다. 다시 로그인해주세요.');
+      } else if (error.response?.status === 500) {
+        setError('서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
+      } else {
+        setError('플레이리스트 추가 중 오류가 발생했습니다');
+      }
     } finally {
       setLoading(false);
     }
