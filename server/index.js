@@ -56,9 +56,9 @@ const storage = multer.diskStorage({
 const upload = multer({ 
   storage: storage,
   limits: {
-    fileSize: 2 * 1024 * 1024, // 2MB 제한 (Vercel 호환성을 위해 줄임)
+    fileSize: 1 * 1024 * 1024, // 1MB 제한 (Vercel 호환성을 위해 더 줄임)
     files: 1, // 한 번에 하나의 파일만
-    fieldSize: 1024 * 1024 // 1MB 필드 크기 제한
+    fieldSize: 512 * 1024 // 512KB 필드 크기 제한
   },
   fileFilter: function (req, file, cb) {
     console.log('Multer file filter - file:', file);
@@ -386,7 +386,7 @@ const handleMulterError = (error, req, res, next) => {
   console.log('Multer error:', error);
   if (error instanceof multer.MulterError) {
     if (error.code === 'LIMIT_FILE_SIZE') {
-      return res.status(413).json({ message: '파일 크기가 너무 큽니다. 2MB 이하의 파일을 선택해주세요.' });
+      return res.status(413).json({ message: '파일 크기가 너무 큽니다. 1MB 이하의 파일을 선택해주세요.' });
     }
     if (error.code === 'LIMIT_FILE_COUNT') {
       return res.status(400).json({ message: '한 번에 하나의 파일만 업로드할 수 있습니다.' });
@@ -398,10 +398,54 @@ const handleMulterError = (error, req, res, next) => {
   next(error);
 };
 
-// 썸네일 업로드
+// 썸네일 업로드 (Base64 방식)
+app.post('/api/upload-thumbnail-base64', authenticateToken, (req, res) => {
+  try {
+    console.log('=== THUMBNAIL UPLOAD REQUEST (Base64) ===');
+    console.log('User ID:', req.user.id);
+    console.log('Request body keys:', Object.keys(req.body));
+    console.log('Filename:', req.body.filename);
+    console.log('Mimetype:', req.body.mimetype);
+    console.log('Base64 data length:', req.body.thumbnail?.length);
+
+    const { thumbnail, filename, mimetype } = req.body;
+
+    if (!thumbnail) {
+      console.log('No Base64 data provided');
+      return res.status(400).json({ message: '이미지 데이터가 제공되지 않았습니다.' });
+    }
+
+    // Base64 데이터를 버퍼로 변환
+    const imageBuffer = Buffer.from(thumbnail, 'base64');
+    console.log('Image buffer size:', imageBuffer.length);
+
+    // 파일명 생성
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    const fileExtension = path.extname(filename) || '.jpg';
+    const generatedFilename = `thumbnail-${uniqueSuffix}${fileExtension}`;
+    const filePath = path.join(uploadDir, generatedFilename);
+
+    // 파일 저장
+    fs.writeFileSync(filePath, imageBuffer);
+    console.log('File saved to:', filePath);
+
+    const thumbnailUrl = `/uploads/${generatedFilename}`;
+    console.log('Generated thumbnail URL:', thumbnailUrl);
+    
+    res.json({ 
+      message: '썸네일이 업로드되었습니다.',
+      thumbnailUrl: thumbnailUrl
+    });
+  } catch (error) {
+    console.error('Base64 thumbnail upload error:', error);
+    res.status(500).json({ message: '썸네일 업로드 중 오류가 발생했습니다.' });
+  }
+});
+
+// 썸네일 업로드 (기존 FormData 방식 - 호환성을 위해 유지)
 app.post('/api/upload-thumbnail', authenticateToken, upload.single('thumbnail'), handleMulterError, (req, res) => {
   try {
-    console.log('=== THUMBNAIL UPLOAD REQUEST ===');
+    console.log('=== THUMBNAIL UPLOAD REQUEST (FormData) ===');
     console.log('User ID:', req.user.id);
     console.log('Uploaded file:', req.file);
     console.log('Request headers:', req.headers);

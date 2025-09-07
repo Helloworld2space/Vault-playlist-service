@@ -422,8 +422,8 @@ const AddPlaylistModal = ({ onClose, onAdd }) => {
     }
   };
 
-  // 이미지 압축 함수
-  const compressImage = (file, maxWidth = 800, quality = 0.8) => {
+  // 이미지 압축 함수 (더 강한 압축)
+  const compressImage = (file, maxWidth = 600, quality = 0.6) => {
     return new Promise((resolve) => {
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
@@ -471,8 +471,8 @@ const AddPlaylistModal = ({ onClose, onAdd }) => {
 
       let processedFile = file;
       
-      // 파일 크기가 2MB를 초과하면 압축
-      const maxSize = 2 * 1024 * 1024; // 2MB
+      // 파일 크기가 1MB를 초과하면 압축 (Base64 인코딩으로 인한 크기 증가 고려)
+      const maxSize = 1 * 1024 * 1024; // 1MB
       if (file.size > maxSize) {
         console.log('File too large, compressing...');
         try {
@@ -514,7 +514,7 @@ const AddPlaylistModal = ({ onClose, onAdd }) => {
   const handleFileUpload = async () => {
     if (!selectedFile) return null;
 
-    console.log('=== FILE UPLOAD START ===');
+    console.log('=== FILE UPLOAD START (Base64) ===');
     console.log('Selected file:', selectedFile);
     console.log('File size:', selectedFile.size);
     console.log('File type:', selectedFile.type);
@@ -538,26 +538,34 @@ const AddPlaylistModal = ({ onClose, onAdd }) => {
         return null;
       }
 
-      const formData = new FormData();
-      formData.append('thumbnail', selectedFile);
+      // Base64로 파일 변환
+      console.log('Converting file to Base64...');
+      const base64Data = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const base64 = reader.result.split(',')[1]; // data:image/jpeg;base64, 부분 제거
+          resolve(base64);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(selectedFile);
+      });
 
-      console.log('FormData created:', formData);
-      console.log('FormData entries:');
-      for (let [key, value] of formData.entries()) {
-        console.log(key, value);
-      }
+      console.log('Base64 conversion completed, size:', base64Data.length);
 
-      console.log('Uploading file to server...');
-      const response = await axios.post('/api/upload-thumbnail', formData, {
+      // JSON으로 서버에 전송
+      const uploadData = {
+        thumbnail: base64Data,
+        filename: selectedFile.name,
+        mimetype: selectedFile.type
+      };
+
+      console.log('Uploading Base64 data to server...');
+      const response = await axios.post('/api/upload-thumbnail-base64', uploadData, {
         headers: { 
-          Authorization: `Bearer ${token}`
-          // Content-Type을 명시적으로 설정하지 않음 (axios가 자동으로 multipart/form-data 설정)
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
         },
-        timeout: 30000, // 30초 타임아웃 (파일 업로드는 더 오래 걸릴 수 있음)
-        onUploadProgress: (progressEvent) => {
-          const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-          console.log(`Upload progress: ${percentCompleted}%`);
-        }
+        timeout: 30000
       });
 
       console.log('File upload response:', response.data);
@@ -579,7 +587,7 @@ const AddPlaylistModal = ({ onClose, onAdd }) => {
       } else if (error.response?.status === 401) {
         setError('로그인이 필요합니다. 다시 로그인해주세요.');
       } else if (error.response?.status === 413) {
-        setError('파일 크기가 너무 큽니다. 2MB 이하의 파일을 선택해주세요.');
+        setError('파일 크기가 너무 큽니다. 1MB 이하의 파일을 선택해주세요.');
       } else if (error.response?.status === 400) {
         setError('지원하지 않는 파일 형식입니다. 이미지 파일을 선택해주세요.');
       } else {
